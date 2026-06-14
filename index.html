@@ -1229,8 +1229,8 @@
         $('loginPanel').style.display='block';$('registerPanel').style.display='none';
     }
 
-    // 图片灯箱
-    function showLightbox(src) {
+    // 图片灯箱（挂到 window 供 onclick 调用）
+    window.showLightbox = function(src) {
         let lb = document.getElementById('lightbox');
         if (!lb) {
             lb = document.createElement('div');
@@ -1241,7 +1241,13 @@
         }
         lb.querySelector('img').src = src;
         lb.style.display = 'flex';
-    }
+        // 阻止滚动
+        document.body.style.overflow = 'hidden';
+        lb.addEventListener('click', function hide() {
+            lb.style.display = 'none';
+            document.body.style.overflow = '';
+        }, {once: true});
+    };
 
     init();
 })();
