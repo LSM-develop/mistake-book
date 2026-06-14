@@ -1075,6 +1075,22 @@
     };
 
     // ──── 启动 ────────────────────────────────────
+    
+    // 预置 Supabase 配置（自动生成）
+    (function(){
+      if(!localStorage.getItem('mc_sb_url')) localStorage.setItem('mc_sb_url','https://qjjzavoxrsuwfymqjduz.supabase.co');
+      if(!localStorage.getItem('mc_sb_key')) localStorage.setItem('mc_sb_key','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqanphdm94cnN1d2Z5bXFqZHV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjQ2MzQsImV4cCI6MjA5NzAwMDYzNH0.mZJoHt_8Oo0WfRPKATZRYo0KK4wtCBAQ3v04i_dImG8');
+      if(!localStorage.getItem('mc_mode')) localStorage.setItem('mc_mode','supabase');
+    })();
+    
+    
+    // 预置 Supabase 配置（自动生成）
+    (function(){
+      if(!localStorage.getItem('mc_sb_url')) localStorage.setItem('mc_sb_url','https://qjjzavoxrsuwfymqjduz.supabase.co');
+      if(!localStorage.getItem('mc_sb_key')) localStorage.setItem('mc_sb_key','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqanphdm94cnN1d2Z5bXFqZHV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjQ2MzQsImV4cCI6MjA5NzAwMDYzNH0.mZJoHt_8Oo0WfRPKATZRYo0KK4wtCBAQ3v04i_dImG8');
+      if(!localStorage.getItem('mc_mode')) localStorage.setItem('mc_mode','supabase');
+    })();
+    
     function init() {
         // 恢复配置
         const savedMode=localStorage.getItem('mc_mode');
@@ -1089,6 +1105,11 @@
         const savedUrl=localStorage.getItem('mc_sb_url');if(savedUrl)$('sbUrl').value=savedUrl;
         const savedKey=localStorage.getItem('mc_sb_key');if(savedKey)$('sbKey').value=savedKey;
         const savedServer=localStorage.getItem('mc_server_url');if(savedServer)$('serverUrlInput').value=savedServer;
+
+        // 预置 Supabase 配置
+        if(!savedUrl) localStorage.setItem('mc_sb_url','https://qjjzavoxrsuwfymqjduz.supabase.co');
+        if(!savedKey) localStorage.setItem('mc_sb_key','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqanphdm94cnN1d2Z5bXFqZHV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjQ2MzQsImV4cCI6MjA5NzAwMDYzNH0.mZJoHt_8Oo0WfRPKATZRYo0KK4wtCBAQ3v04i_dImG8');
+        if(!localStorage.getItem('mc_mode')) localStorage.setItem('mc_mode','supabase');
 
         // 尝试自动恢复 Supabase 会话
         if(S.mode==='supabase'&&savedUrl&&savedKey){
