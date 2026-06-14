@@ -423,7 +423,14 @@
             const { data, error } = await S.sb.from('questions')
                 .select('*').eq('user_id', uid()).order('create_time', { ascending: false });
             if (error) throw new Error(error.message);
-            return (data || []).map(q => ({ ...q, knowledgePoints: q.knowledge_points, important: !!q.important }));
+            return (data || []).map(q => ({
+                ...q,
+                questionText: q.question_text || '',
+                knowledgePoints: q.knowledge_points || '',
+                createTime: q.create_time,
+                imageId: q.image_id,
+                important: !!q.important,
+            }));
         },
         async saveQuestion(q) {
             const { error } = await S.sb.from('questions').upsert({
@@ -479,7 +486,14 @@
         },
         async getExploreQuestions(userId) {
             const { data } = await S.sb.from('questions').select('*').eq('user_id', userId).order('create_time', { ascending: false });
-            return (data||[]).map(q => ({ ...q, knowledgePoints: q.knowledge_points, important: !!q.important }));
+            return (data||[]).map(q => ({
+                ...q,
+                questionText: q.question_text || '',
+                knowledgePoints: q.knowledge_points || '',
+                createTime: q.create_time,
+                imageId: q.image_id,
+                important: !!q.important,
+            }));
         },
         async getExploreImage(userId, imgId) {
             const { data } = await S.sb.from('images').select('data').eq('id', imgId).eq('user_id', userId).maybeSingle();
