@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2c3e66">
+    <title>智学错题集 · 云端跨设备版</title>
+    <style>
+        :root {
+            --primary: #2c3e66; --primary-light: #3d5a80; --accent: #e67e22;
+            --bg: #f4f7fc; --card-bg: #ffffff; --text: #1e2f3e;
+            --text-secondary: #64748b; --border: #e2e8f0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.06);
+            --radius: 16px; --radius-sm: 10px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html { font-size:16px; }
+        body {
+            font-family: system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+        }
+
+        /* Toast */
+        #toastContainer { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:10000; display:flex; flex-direction:column; gap:8px; pointer-events:none; width:calc(100%-32px); max-width:420px; }
+        .toast { padding:12px 20px; border-radius:30px; font-size:0.9rem; font-weight:500; text-align:center; animation:toastIn 0.3s; box-shadow:0 6px 20px rgba(0,0,0,0.15); color:#fff; }
+        .toast.info{background:#2c3e66} .toast.success{background:#2b6e3c} .toast.error{background:#bc3f2e} .toast.warning{background:#e67e22}
+        @keyframes toastIn { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+
+        /* Login */
+        #authContainer { max-width:480px; margin:40px auto 0; padding:0 16px; }
+        .auth-card { background:var(--card-bg); border-radius:24px; padding:28px 22px; box-shadow:0 10px 30px rgba(0,0,0,0.08); border:1px solid var(--border); }
+        .auth-card h2 { text-align:center; margin-bottom:8px; font-size:1.3rem; color:var(--primary); }
+        .auth-card .subtitle { text-align:center; font-size:0.75rem; color:var(--text-secondary); margin-bottom:20px; }
+        .mode-tabs { display:flex; gap:4px; margin-bottom:18px; background:#f1f5f9; border-radius:26px; padding:4px; }
+        .mode-tab { flex:1; text-align:center; padding:8px 6px; border-radius:22px; cursor:pointer; font-size:0.72rem; font-weight:600; border:none; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
+        .mode-tab.active { background:#fff; color:var(--primary); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .config-section { margin-bottom:14px; padding:10px 14px; background:#f8fafc; border-radius:14px; border:1px solid var(--border); display:none; }
+        .config-section.show { display:block; }
+        .config-section label { display:block; font-weight:600; font-size:0.72rem; color:var(--text-secondary); margin-bottom:4px; }
+        .config-section input { width:100%; padding:8px 12px; border-radius:8px; border:1.5px solid var(--border); font-size:0.8rem; outline:none; background:#fff; }
+        .config-section input:focus { border-color:var(--primary); }
+        .config-section .hint { font-size:0.65rem; color:#94a3b8; margin-top:4px; }
+        .config-section .row { display:flex; gap:8px; }
+        .config-section .row > * { flex:1; }
+        .form-row { margin-bottom:14px; }
+        .form-row label { display:block; font-weight:600; margin-bottom:4px; font-size:0.8rem; color:var(--text-secondary); }
+        .form-row input { width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--border); font-size:0.9rem; outline:none; background:#f8fafc; }
+        .form-row input:focus { border-color:var(--primary); background:#fff; }
+        .auth-link { text-align:center; margin-top:14px; font-size:0.8rem; }
+        .auth-link a { color:var(--primary); text-decoration:none; font-weight:600; }
+
+        /* Buttons */
+        button { border:none; padding:8px 18px; border-radius:24px; font-weight:600; cursor:pointer; transition:all 0.2s; font-size:0.85rem; min-height:40px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; -webkit-tap-highlight-color:transparent; }
+        button:active { transform:scale(0.96); }
+        button.primary { background:var(--primary); color:#fff; }
+        button.outline { background:#fff; color:var(--primary); border:1.5px solid #cbd5e1; }
+        button.accent { background:var(--accent); color:#fff; }
+        button.danger { background:#dc3545; color:#fff; }
+        button.small { padding:4px 12px; min-height:32px; font-size:0.7rem; }
+        button.block { width:100%; justify-content:center; }
+        button:disabled { opacity:0.5; pointer-events:none; }
+
+        /* Main App */
+        .app-container { max-width:1400px; margin:0 auto; padding:0 16px; }
+        .header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:var(--card-bg); padding:10px 18px; border-radius:18px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:12px; position:sticky; top:8px; z-index:100; }
+        .header h1 { font-size:1.15rem; white-space:nowrap; }
+        .header h1 .gradient-text { background:linear-gradient(135deg,#2b5876,#4e4376); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .user-info { display:flex; align-items:center; gap:8px; background:#f1f5f9; padding:5px 12px; border-radius:24px; font-size:0.8rem; }
+        .readonly-badge { background:#fef3c7; color:#92400e; padding:3px 12px; border-radius:20px; font-size:0.7rem; font-weight:600; white-space:nowrap; }
+
+        /* Filter */
+        .filter-bar { background:var(--card-bg); border-radius:18px; padding:10px 16px; margin-bottom:12px; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .filter-bar-inner { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+        .filter-group { display:flex; align-items:center; gap:5px; background:#f8fafc; padding:4px 10px; border-radius:20px; border:1px solid var(--border); }
+        .filter-group label { font-weight:600; font-size:0.75rem; color:#475569; white-space:nowrap; }
+        .filter-group select,.filter-group input { border:none; background:transparent; padding:3px 5px; font-size:0.78rem; outline:none; font-weight:500; }
+        .search-input { min-width:130px; flex:1; }
+        .filter-toggle { display:none; width:100%; text-align:center; font-size:0.8rem; font-weight:600; color:var(--primary); cursor:pointer; padding:4px; }
+
+        /* Table */
+        .questions-table-wrapper { background:var(--card-bg); border-radius:18px; overflow:hidden; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .desktop-table { width:100%; border-collapse:collapse; min-width:900px; }
+        .desktop-table th { text-align:left; padding:12px 10px; background:#f9fbfe; font-weight:600; color:#475569; font-size:0.78rem; border-bottom:1px solid var(--border); }
+        .desktop-table td { padding:10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; font-size:0.8rem; }
+        .desktop-table tbody tr:hover { background:#f8fafc; }
+        .badge { display:inline-block; padding:3px 10px; border-radius:16px; font-size:0.7rem; font-weight:600; }
+        .badge-subject{background:#e9f0f9;color:#2c3e66} .badge-category{background:#f1f5f9;color:#475569} .badge-knowledge{background:#e6f7f0;color:#1f6e43}
+        .badge-easy{background:#dff9e6;color:#2b6e3c} .badge-medium{background:#fff0db;color:#b95b0e} .badge-hard{background:#ffe3e3;color:#bc3f2e}
+        .star-icon { cursor:pointer; font-size:1.1rem; color:#cbd5e1; user-select:none; }
+        .star-icon.active { color:#f5b042; }
+        .action-icons { display:flex; gap:6px; align-items:center; }
+        .action-icons span { cursor:pointer; font-size:1rem; opacity:0.6; padding:4px; }
+        .action-icons span:hover { opacity:1; }
+
+        /* Cards (mobile) */
+        .card-list { display:none; flex-direction:column; gap:10px; }
+        .question-card { background:var(--card-bg); border-radius:var(--radius); padding:13px 14px; box-shadow:var(--shadow); border:1px solid var(--border); cursor:pointer; }
+        .question-card:active { background:#f8fafc; transform:scale(0.985); }
+        .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+        .card-tags { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+        .card-body { font-size:0.8rem; color:var(--text); line-height:1.5; margin-bottom:4px; }
+        .card-body .preview { max-height:44px; overflow:hidden; color:#475569; }
+        .card-footer { display:flex; justify-content:space-between; align-items:center; font-size:0.68rem; color:#94a3b8; }
+        .card-actions { display:flex; gap:10px; }
+        .card-actions span { font-size:1.05rem; cursor:pointer; padding:3px; }
+        .empty-state { text-align:center; padding:48px 20px; color:#94a3b8; }
+        .empty-state .icon { font-size:3rem; margin-bottom:12px; }
+
+        /* Pagination */
+        .pagination { display:flex; justify-content:center; align-items:center; gap:14px; padding:14px; border-top:1px solid #f1f5f9; }
+        .pagination span { font-size:0.8rem; font-weight:600; color:var(--text-secondary); }
+
+        /* Modals */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:2000; padding:16px; }
+        .modal-content { background:var(--card-bg); border-radius:22px; padding:22px 24px; width:100%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.15); }
+        .modal-content h2 { margin-bottom:16px; color:var(--primary); font-size:1.1rem; }
+        .form-row { margin-bottom:14px; }
+        .form-row label { display:block; font-weight:600; margin-bottom:4px; font-size:0.78rem; color:#475569; }
+        .form-row input,.form-row textarea,.form-row select { width:100%; padding:9px 12px; border-radius:8px; border:1.5px solid var(--border); font-size:0.85rem; outline:none; font-family:inherit; background:#f8fafc; }
+        .form-row input:focus,.form-row textarea:focus,.form-row select:focus { border-color:var(--primary); background:#fff; }
+        .form-row textarea { min-height:70px; resize:vertical; }
+        .flex-btns { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; flex-wrap:wrap; }
+        .img-preview { max-width:100%; max-height:180px; border-radius:8px; margin-top:6px; }
+        .checkbox-row { display:flex; align-items:center; gap:6px; }
+        .checkbox-row input[type=checkbox] { width:18px; height:18px; accent-color:var(--primary); }
+        .detail-content { line-height:1.8; }
+        .detail-content .detail-img { max-width:100%; max-height:300px; border-radius:8px; margin:8px 0; }
+        .detail-content .detail-label { font-weight:600; color:var(--text-secondary); font-size:0.78rem; }
+        .admin-table { width:100%; border-collapse:collapse; margin-top:10px; font-size:0.8rem; }
+        .admin-table th,.admin-table td { border:1px solid var(--border); padding:8px; text-align:left; }
+        .admin-table th { background:#f9fbfe; font-weight:600; }
+
+        /* Mobile */
+        @media(max-width:768px) {
+            body { font-size:15px; }
+            .app-container { padding:0 8px; }
+            .header { padding:8px 12px; border-radius:14px; gap:6px; }
+            .header h1 { font-size:0.95rem; }
+            .user-info { padding:4px 8px; gap:5px; font-size:0.7rem; }
+            .user-info button { min-height:30px; padding:4px 8px; font-size:0.65rem; }
+            .filter-bar { padding:8px 12px; border-radius:14px; }
+            .filter-bar-inner { gap:6px; }
+            .filter-group { padding:3px 7px; font-size:0.68rem; }
+            .filter-toggle { display:block; }
+            .filter-collapsed .filter-bar-inner { display:none; }
+            .desktop-table { display:none; }
+            .card-list { display:flex; }
+            .questions-table-wrapper { box-shadow:none; background:transparent; border:none; }
+            .modal { padding:0; align-items:flex-end; }
+            .modal-content { border-radius:22px 22px 0 0; max-height:90vh; width:100%; padding:18px 14px; padding-bottom:calc(18px + var(--safe-bottom)); }
+            .form-row input,.form-row textarea,.form-row select { font-size:16px; }
+            button { min-height:42px; padding:9px 16px; font-size:0.8rem; }
+            button.small { min-height:32px; padding:5px 10px; }
+            #authContainer { margin-top:16px; }
+            .auth-card { border-radius:18px; padding:20px 14px; }
+            .admin-table-wrapper { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        }
+        @media(max-width:400px) {
+            .header h1 { font-size:0.85rem; }
+            .header { padding:6px 8px; }
+            button { min-height:38px; padding:7px 12px; font-size:0.72rem; }
+        }
+        @media print {
+            body { background:#fff; }
+            .header,.filter-bar,.pagination,#toastContainer,.action-icons,.card-actions,button,.filter-toggle { display:none!important; }
+            .questions-table-wrapper { box-shadow:none; border:none; }
+            .desktop-table { min-width:auto; display:table!important; }
+            .card-list { display:none!important; }
+            .app-container { max-width:100%; padding:0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<!-- ========== 登录 ========== -->
+<div id="authContainer">
+    <div class="auth-card">
+        <h2>📚 智学错题集</h2>
+        <p class="subtitle">☁️ 云端版 · 数据跨设备实时同步</p>
+
+        <!-- 模式切换 -->
+        <div class="mode-tabs" id="modeTabs">
+            <button class="mode-tab active" data-mode="supabase">☁️ 云同步</button>
+            <button class="mode-tab" data-mode="server">🖥️ 自建服务器</button>
+        </div>
+
+        <!-- Supabase 配置 -->
+        <div class="config-section show" id="supabaseConfig">
+            <label>🔗 Supabase URL</label>
+            <input type="text" id="sbUrl" placeholder="https://xxxxxxxxxxxx.supabase.co">
+            <label style="margin-top:8px;">🔑 Anon Key</label>
+            <input type="text" id="sbKey" placeholder="eyJhbGciOi...">
+            <div class="hint" id="supabaseHint">在 supabase.com 创建免费项目后获取</div>
+        </div>
+
+        <!-- 自建服务器配置 -->
+        <div class="config-section" id="serverConfig">
+            <label>🌐 服务器地址</label>
+            <input type="text" id="serverUrlInput" placeholder="http://localhost:3030">
+            <div class="hint">局域网填电脑IP，远程填公网地址</div>
+        </div>
+
+        <!-- 登录表单 -->
+        <div id="loginPanel">
+            <div class="form-row"><label>👤 用户名</label><input type="text" id="loginUsername" placeholder="用户名" autocomplete="username"></div>
+            <div class="form-row"><label>🔒 密码</label><input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password"></div>
+            <button id="doLoginBtn" class="primary block">登 录</button>
+            <p class="auth-link">没有账号？<a href="#" id="showRegisterBtn">立即注册</a></p>
+        </div>
+        <div id="registerPanel" style="display:none;">
+            <div class="form-row"><label>👤 用户名</label><input type="text" id="regUsername" placeholder="2-20个字符" autocomplete="username"></div>
+            <div class="form-row"><label>🔒 密码</label><input type="password" id="regPassword" placeholder="至少4个字符" autocomplete="new-password"></div>
+            <button id="doRegisterBtn" class="primary block">注 册</button>
+            <p class="auth-link"><a href="#" id="backToLoginBtn">← 返回登录</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 主应用 ========== -->
+<div id="mainApp" style="display:none;">
+    <div class="app-container">
+        <div class="header">
+            <h1><span class="gradient-text">📚 智学错题集</span><span style="font-size:0.6rem;color:#2b6e3c;margin-left:6px;">☁️</span></h1>
+            <div class="user-info">
+                <span>👤 <span id="currentUsername"></span></span>
+                <button id="logoutBtn" class="small outline">退出</button>
+                <button id="adminPanelBtn" class="small accent" style="display:none;">👑 管理</button>
+            </div>
+        </div>
+
+        <div class="filter-bar filter-collapsed" id="filterBar">
+            <div class="filter-toggle" id="filterToggle">🔍 筛选与搜索 ▾</div>
+            <div class="filter-bar-inner">
+                <div class="filter-group"><label>📚</label><select id="filterSubject"><option value="all">全部科目</option></select></div>
+                <div class="filter-group"><label>⭐</label><select id="filterLevel"><option value="all">全部</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select></div>
+                <div class="filter-group"><label>🔖</label><select id="filterImportant"><option value="all">全部</option><option value="true">重点</option><option value="false">非重点</option></select></div>
+                <div class="filter-group" style="flex:1;"><input type="text" id="searchInput" placeholder="🔍 搜索..." class="search-input"></div>
+                <button id="newQuestionBtn" class="primary">＋ 新建</button>
+                <button id="printPdfBtn" class="outline">🖨️</button>
+                <button id="exportBackupBtn" class="outline">📦</button>
+                <button id="importBackupBtn" class="outline">📂</button>
+                <div class="filter-group">
+                    <input type="text" id="exploreUsername" placeholder="查看他人用户名" style="min-width:100px;width:120px;">
+                    <button id="exploreBtn" class="small outline">🔍</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align:right;margin-bottom:6px;">
+            <span id="viewModeHint"></span>
+            <span id="resultCount" style="font-size:0.7rem;color:#94a3b8;"></span>
+        </div>
+
+        <div class="questions-table-wrapper">
+            <table class="desktop-table" id="desktopTable">
+                <thead><tr><th>科目</th><th>题目预览</th><th>分类</th><th>知识点</th><th>难度</th><th>重点</th><th>时间</th><th>操作</th></tr></thead>
+                <tbody id="tableBody"><tr><td colspan="8" style="text-align:center;">✨ 加载中...</td></tr></tbody>
+            </table>
+            <div class="card-list" id="cardList"></div>
+            <div class="pagination" id="paginationArea"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 编辑模态框 ========== -->
+<div id="questionModal" class="modal">
+    <div class="modal-content" style="max-width:650px;">
+        <h2 id="modalTitle">📝 新建错题</h2>
+        <input type="hidden" id="editId">
+        <div class="form-row"><label>📚 科目 *</label><div style="display:flex;gap:6px;"><select id="modalSubject" style="flex:1;"></select><button type="button" id="addSubjectBtn" class="small outline">＋</button></div></div>
+        <div class="form-row"><label>📂 分类</label><input type="text" id="modalCategory" placeholder="选择题/填空题..."></div>
+        <div class="form-row"><label>🧠 知识点（逗号分隔）</label><input type="text" id="modalKnowledge" placeholder="二次函数, 欧姆定律"></div>
+        <div class="form-row"><label>⭐ 难度</label><select id="modalLevel"><option value="easy">🟢 简单</option><option value="medium" selected>🟡 中等</option><option value="hard">🔴 困难</option></select></div>
+        <div class="form-row"><label>📄 题目内容</label><textarea id="modalQuestionText" placeholder="原题描述..."></textarea></div>
+        <div class="form-row"><label>📸 拍照/配图</label><input type="file" id="modalImageFile" accept="image/*" capture="environment"><div id="imagePreviewContainer"></div><div style="font-size:0.6rem;color:#94a3b8;margin-top:4px;">📱 手机点击直接拍照，自动压缩</div></div>
+        <div class="form-row"><label>📖 解析/错因</label><textarea id="modalAnalysis" placeholder="正确解析和错误原因..."></textarea></div>
+        <div class="form-row checkbox-row"><input type="checkbox" id="modalImportant"><label for="modalImportant" style="margin:0;">⭐ 标记为重点</label></div>
+        <div class="flex-btns"><button id="cancelModalBtn" class="outline">取消</button><button id="saveQuestionBtn" class="primary">💾 保存</button></div>
+    </div>
+</div>
+
+<!-- ========== 详情模态框 ========== -->
+<div id="detailModal" class="modal">
+    <div class="modal-content" style="max-width:550px;">
+        <div class="detail-content" id="detailContent"></div>
+        <div class="flex-btns"><button id="closeDetailBtn" class="primary">关闭</button></div>
+    </div>
+</div>
+
+<!-- ========== 管理后台模态框 ========== -->
+<div id="adminModal" class="modal">
+    <div class="modal-content" style="max-width:800px;">
+        <h2>👑 用户管理</h2>
+        <div class="admin-table-wrapper"><div id="adminUserList">加载中...</div></div>
+        <div class="flex-btns"><button id="closeAdminModal" class="primary">关闭</button></div>
+    </div>
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+(function() {
+    'use strict';
+
+    // ──── 常量 ────────────────────────────────────
+    const PAGE_SIZE = 15;
+    const DEFAULT_SUBJECTS = ['数学','语文','英语','物理','化学','生物','历史','地理','政治'];
+    const IMG_MAX_WIDTH = 800;
+    const IMG_QUALITY = 0.7;
+
+    // ──── DOM 引用 ────────────────────────────────
+    const $ = id => document.getElementById(id);
+
+    // ──── 全局状态 ────────────────────────────────
+    let S = {
+        mode: 'supabase',  // 'supabase' | 'server'
+        sb: null,          // Supabase 客户端
+        user: null,        // 当前用户信息 {id, username, role}
+        token: null,       // server模式的JWT
+        viewMode: 'self',
+        viewedUserId: null,
+        viewedUserName: '',
+        allQuestions: [],
+        filteredQuestions: [],
+        currentSubjects: [],
+        currentPage: 1,
+        currentImageDataUrl: null,
+        currentEditImageId: null,
+        serverUrl: '',
+    };
+
+    // ──── 工具函数 ────────────────────────────────
+    function escapeHtml(s) {
+        if(!s) return '';
+        return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    }
+    function formatTime(ts) {
+        const d = new Date(ts), pad = n => String(n).padStart(2,'0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function toast(msg, type='info', dur=2200) {
+        const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = msg;
+        $('toastContainer').appendChild(el);
+        setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.3s';setTimeout(()=>el.remove(),300);}, dur);
+    }
+    function uid() { return S.user ? S.user.id : null; }
+
+    // ──── 图片压缩 ────────────────────────────────
+    function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    let w=img.width, h=img.height;
+                    if(w <= IMG_MAX_WIDTH) { resolve(e.target.result); return; }
+                    const ratio = IMG_MAX_WIDTH/w; w=IMG_MAX_WIDTH; h=Math.round(h*ratio);
+                    const c=document.createElement('canvas'); c.width=w; c.height=h;
+                    c.getContext('2d').drawImage(img,0,0,w,h);
+                    resolve(c.toDataURL('image/jpeg',IMG_QUALITY));
+                };
+                img.onerror = () => reject(new Error('加载失败'));
+                img.src = e.target.result;
+            };
+            r.onerror = () => reject(new Error('读取失败'));
+            r.readAsDataURL(file);
+        });
+    }
+
+    // ════════════════════════════════════════════════
+    //  Supabase 数据操作
+    // ════════════════════════════════════════════════
+    const sbApi = {
+        // Auth
+        async register(username, password) {
+            const email = `${username}@m.internal`;
+            const { data, error } = await S.sb.auth.signUp({
+                email, password,
+                options: { data: { display_name: username } }
+            });
+            if (error) {
+                if (error.message.includes('already registered')) throw new Error('用户名已存在');
+                throw new Error(error.message);
+            }
+            if (data.user && data.user.identities && data.user.identities.length === 0) {
+                throw new Error('用户名已存在');
+            }
+            return data;
+        },
+        async login(username, password) {
+            const email = `${username}@m.internal`;
+            const { data, error } = await S.sb.auth.signInWithPassword({ email, password });
+            if (error) {
+                if (error.message.includes('Invalid login')) throw new Error('用户名或密码错误');
+                throw new Error(error.message);
+            }
+            // 获取用户角色
+            const { data: profile } = await S.sb.from('user_profiles').select('role').eq('user_id', data.user.id).single();
+            return {
+                id: data.user.id,
+                username: username,
+                role: profile?.role || 'user',
+                session: data.session,
+            };
+        },
+
+        // Questions
+        async getQuestions() {
+            const { data, error } = await S.sb.from('questions')
+                .select('*').eq('user_id', uid()).order('create_time', { ascending: false });
+            if (error) throw new Error(error.message);
+            return (data || []).map(q => ({ ...q, knowledgePoints: q.knowledge_points, important: !!q.important }));
+        },
+        async saveQuestion(q) {
+            const { error } = await S.sb.from('questions').upsert({
+                id: q.id, user_id: uid(), subject: q.subject, category: q.category || '',
+                knowledge_points: q.knowledgePoints || '', level: q.level || 'medium',
+                question_text: q.questionText || '', analysis: q.analysis || '',
+                important: q.important || false, image_id: q.imageId || null,
+                create_time: q.createTime || Date.now(),
+            });
+            if (error) throw new Error(error.message);
+        },
+        async deleteQuestion(id) {
+            const { error } = await S.sb.from('questions').delete().eq('id', id).eq('user_id', uid());
+            if (error) throw new Error(error.message);
+        },
+
+        // Subjects
+        async getSubjects() {
+            const { data, error } = await S.sb.from('subjects').select('subjects_json').eq('user_id', uid()).single();
+            if (error || !data) {
+                // 初始化
+                await S.sb.from('subjects').upsert({ user_id: uid(), subjects_json: DEFAULT_SUBJECTS });
+                return DEFAULT_SUBJECTS;
+            }
+            return data.subjects_json;
+        },
+        async saveSubjects(subjects) {
+            await S.sb.from('subjects').upsert({ user_id: uid(), subjects_json: subjects });
+        },
+
+        // Images
+        async uploadImage(id, dataUrl) {
+            const { error } = await S.sb.from('images').upsert({ id, user_id: uid(), data: dataUrl });
+            if (error) throw new Error(error.message);
+        },
+        async getImage(id) {
+            const { data } = await S.sb.from('images').select('data').eq('id', id).eq('user_id', uid()).single();
+            return data ? data.data : null;
+        },
+        async deleteImage(id) {
+            await S.sb.from('images').delete().eq('id', id).eq('user_id', uid());
+        },
+
+        // Explore
+        async getExploreUsers() {
+            const { data } = await S.sb.from('user_profiles').select('user_id, display_name, role').order('display_name');
+            const { data: qData } = await S.sb.from('questions').select('user_id');
+            const counts = {}; (qData||[]).forEach(q => { counts[q.user_id] = (counts[q.user_id]||0)+1; });
+            return (data||[]).map(u => ({ id: u.user_id, username: u.display_name, role: u.role, question_count: counts[u.user_id]||0 }));
+        },
+        async getExploreQuestions(userId) {
+            const { data } = await S.sb.from('questions').select('*').eq('user_id', userId).order('create_time', { ascending: false });
+            return (data||[]).map(q => ({ ...q, knowledgePoints: q.knowledge_points, important: !!q.important }));
+        },
+        async getExploreImage(userId, imgId) {
+            const { data } = await S.sb.from('images').select('data').eq('id', imgId).eq('user_id', userId).single();
+            return data ? data.data : null;
+        },
+
+        // Admin
+        async getAdminStats() {
+            const { data } = await S.sb.rpc('get_all_users_stats');
+            return (data||[]).map(u => ({ id: u.user_id, username: u.display_name, role: u.role, created_at: u.created_at, question_count: u.question_count, image_count: u.image_count }));
+        },
+        async deleteUser(userId) {
+            await S.sb.from('images').delete().eq('user_id', userId);
+            await S.sb.from('questions').delete().eq('user_id', userId);
+            await S.sb.from('subjects').delete().eq('user_id', userId);
+            await S.sb.from('user_profiles').delete().eq('user_id', userId);
+        },
+
+        // Backup
+        async exportBackup() {
+            const questions = await this.getQuestions();
+            const { data: imgs } = await S.sb.from('images').select('*').eq('user_id', uid());
+            const images = {}; (imgs||[]).forEach(i=>{images[i.id]=i.data;});
+            const subjects = await this.getSubjects();
+            return { exportVersion:'3.0', questions, images, subjects };
+        },
+        async importBackup(data) {
+            if (data.questions) for (const q of data.questions) {
+                await S.sb.from('questions').upsert({
+                    id: q.id, user_id: uid(), subject: q.subject, category: q.category||'',
+                    knowledge_points: q.knowledge_points||q.knowledgePoints||'', level: q.level||'medium',
+                    question_text: q.question_text||q.questionText||'', analysis: q.analysis||'',
+                    important: q.important||false, image_id: q.image_id||q.imageId||null,
+                    create_time: q.create_time||q.createTime||Date.now(),
+                });
+            }
+            if (data.images) for (const [id, d] of Object.entries(data.images)) {
+                await S.sb.from('images').upsert({ id, user_id: uid(), data: d });
+            }
+            if (data.subjects) await this.saveSubjects(data.subjects);
+        },
+    };
+
+    // ════════════════════════════════════════════════
+    //  Server模式 API (复用已有的server.js)
+    // ════════════════════════════════════════════════
+    const serverApi = {
+        async req(method, path, body) {
+            const url = S.serverUrl.replace(/\/+$/,'') + path;
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (S.token) opts.headers['Authorization'] = `Bearer ${S.token}`;
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(url, opts);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `请求失败(${res.status})`);
+            return data;
+        },
+        async login(username, password) {
+            const res = await fetch(`${S.serverUrl.replace(/\/+$/,'')}/api/auth/login`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({username, password})
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error);
+            return { ...data.user, token: data.token };
+        },
+        async register(username, password) {
+            const res = await fetch(`${S.serverUrl.replace(/\/+$/,'')}/api/auth/register`, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({username, password})
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error);
+            return data;
+        },
+    };
+
+    // ──── 统一 API (根据模式路由) ─────────────────
+    const api = {
+        get mode() { return S.mode === 'supabase' ? sbApi : serverApi; },
+    };
+
+    // ──── 数据加载 ────────────────────────────────
+    async function loadAllQuestions() {
+        try {
+            if (S.viewMode === 'self') {
+                S.allQuestions = await api.mode.getQuestions();
+            } else {
+                S.allQuestions = await api.mode.getExploreQuestions(S.viewedUserId);
+            }
+        } catch(e) {
+            toast('加载失败: '+e.message, 'error');
+            S.allQuestions = [];
+        }
+    }
+
+    async function loadSubjects() {
+        try {
+            if (S.viewMode === 'self') {
+                S.currentSubjects = await api.mode.getSubjects();
+            } else if (S.mode === 'supabase') {
+                const subs = [...new Set(S.allQuestions.map(q=>q.subject))];
+                S.currentSubjects = subs.length ? subs : [...DEFAULT_SUBJECTS];
+            } else {
+                S.currentSubjects = [...DEFAULT_SUBJECTS];
+            }
+        } catch(e) {
+            S.currentSubjects = [...DEFAULT_SUBJECTS];
+        }
+    }
+
+    // ──── 渲染 ────────────────────────────────────
+    function applyFilter() {
+        let f = [...S.allQuestions];
+        const subj = $('filterSubject').value, lvl = $('filterLevel').value;
+        const imp = $('filterImportant').value, kw = $('searchInput').value.trim().toLowerCase();
+        if(subj!=='all') f=f.filter(q=>q.subject===subj);
+        if(lvl!=='all') f=f.filter(q=>q.level===lvl);
+        if(imp!=='all') f=f.filter(q=>q.important===(imp==='true'));
+        if(kw) f=f.filter(q=>(q.questionText||'').toLowerCase().includes(kw)||(q.analysis||'').toLowerCase().includes(kw)||(q.category||'').toLowerCase().includes(kw)||(q.knowledgePoints||'').toLowerCase().includes(kw));
+        S.filteredQuestions = f;
+        S.currentPage = 1;
+    }
+
+    function renderAll() {
+        applyFilter();
+        const total = S.filteredQuestions.length;
+        const totalPages = Math.ceil(total/PAGE_SIZE);
+        if(S.currentPage>totalPages) S.currentPage=Math.max(1,totalPages);
+        const start=(S.currentPage-1)*PAGE_SIZE;
+        const items=S.filteredQuestions.slice(start,start+PAGE_SIZE);
+        $('resultCount').textContent = total ? `共${total}条` : '';
+        renderTable(items,total);
+        renderCards(items,total);
+        renderPagination(total,totalPages);
+        refreshSubjectSelects();
+    }
+
+    function renderTable(items,total) {
+        if(!items.length) {
+            $('tableBody').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;">📭 ${total?'无匹配':'暂无错题，点击＋新建开始记录'}</td></tr>`;
+            return;
+        }
+        $('tableBody').innerHTML = items.map(q=>{
+            const preview=q.questionText?(q.questionText.length>45?q.questionText.substring(0,45)+'...':q.questionText):'（无内容）';
+            const kp=q.knowledgePoints?(q.knowledgePoints.length>22?q.knowledgePoints.substring(0,22)+'…':q.knowledgePoints):'未填';
+            const lm={easy:['badge-easy','简单'],medium:['badge-medium','中等'],hard:['badge-hard','困难']};
+            const [lc,ln]=lm[q.level]||lm.medium;
+            const isSelf=S.viewMode==='self';
+            const acts=isSelf
+                ?`<span class="view-detail" data-id="${q.id}">👁️</span><span class="edit-question" data-id="${q.id}">✏️</span><span class="delete-question" data-id="${q.id}">🗑️</span>`
+                :`<span class="view-detail" data-id="${q.id}">👁️</span><span style="opacity:0.4;">🔒</span>`;
+            return `<tr><td><span class="badge badge-subject">${escapeHtml(q.subject)}</span></td>
+                <td><div style="max-width:260px;">${escapeHtml(preview)}</div></td>
+                <td><span class="badge badge-category">${escapeHtml(q.category||'未分类')}</span></td>
+                <td><span class="badge badge-knowledge">${escapeHtml(kp)}</span></td>
+                <td><span class="badge ${lc}">${ln}</span></td>
+                <td><span class="star-icon ${q.important?'active':''}" data-id="${q.id}">⭐</span></td>
+                <td style="font-size:0.7rem;color:#94a3b8;">${formatTime(q.createTime||q.create_time)}</td>
+                <td><div class="action-icons">${acts}</div></td></tr>`;
+        }).join('');
+        bindTableEvents();
+    }
+
+    function renderCards(items,total) {
+        if(!items.length) {
+            $('cardList').innerHTML=`<div class="empty-state"><div class="icon">📭</div><div>${total?'无匹配结果':'暂无错题'}</div></div>`;
+            return;
+        }
+        $('cardList').innerHTML=items.map(q=>{
+            const preview=q.questionText?(q.questionText.length>55?q.questionText.substring(0,55)+'...':q.questionText):'（无内容）';
+            const le={easy:'🟢',medium:'🟡',hard:'🔴'};
+            const isSelf=S.viewMode==='self';
+            const acts=isSelf
+                ?`<span class="edit-question" data-id="${q.id}">✏️</span><span class="delete-question" data-id="${q.id}">🗑️</span>`
+                :`<span style="opacity:0.4;">🔒只读</span>`;
+            return `<div class="question-card" data-id="${q.id}">
+                <div class="card-header"><div class="card-tags">
+                    <span class="badge badge-subject">${escapeHtml(q.subject)}</span>
+                    <span class="badge badge-${q.level}">${le[q.level]||'🟡'} ${q.level==='easy'?'简单':q.level==='hard'?'困难':'中等'}</span>
+                    ${q.category?`<span class="badge badge-category">${escapeHtml(q.category)}</span>`:''}
+                </div><span style="font-size:1.2rem;" class="star-icon-card ${q.important?'active':''}" data-id="${q.id}">${q.important?'⭐':'☆'}</span></div>
+                <div class="card-body"><div class="preview">${escapeHtml(preview)}</div></div>
+                <div class="card-footer"><span>${formatTime(q.createTime||q.create_time)}</span><div class="card-actions">${acts}</div></div>
+            </div>`;
+        }).join('');
+        bindCardEvents();
+    }
+
+    function bindTableEvents() {
+        document.querySelectorAll('#tableBody .star-icon').forEach(s=>{ s.onclick=e=>{e.stopPropagation();toggleImportant(Number(s.dataset.id));}; });
+        document.querySelectorAll('#tableBody .view-detail').forEach(b=>{b.onclick=()=>showDetail(Number(b.dataset.id));});
+        if(S.viewMode==='self'){
+            document.querySelectorAll('#tableBody .edit-question').forEach(b=>{b.onclick=()=>openEditModal(Number(b.dataset.id));});
+            document.querySelectorAll('#tableBody .delete-question').forEach(b=>{b.onclick=()=>deleteQ(Number(b.dataset.id));});
+        }
+    }
+
+    function bindCardEvents() {
+        document.querySelectorAll('#cardList .question-card').forEach(c=>{
+            c.onclick=e=>{if(e.target.closest('span[data-id]'))return;showDetail(Number(c.dataset.id));};
+        });
+        document.querySelectorAll('#cardList .star-icon-card').forEach(s=>{s.onclick=e=>{e.stopPropagation();toggleImportant(Number(s.dataset.id));};});
+        if(S.viewMode==='self'){
+            document.querySelectorAll('#cardList .edit-question').forEach(b=>{b.onclick=e=>{e.stopPropagation();openEditModal(Number(b.dataset.id));};});
+            document.querySelectorAll('#cardList .delete-question').forEach(b=>{b.onclick=e=>{e.stopPropagation();deleteQ(Number(b.dataset.id));};});
+        }
+    }
+
+    function renderPagination(total,totalPages) {
+        if(totalPages<=1){$('paginationArea').innerHTML='';return;}
+        $('paginationArea').innerHTML=`
+            <button id="prevPage" ${S.currentPage===1?'disabled':''}>◀ 上一页</button>
+            <span>${S.currentPage}/${totalPages}</span>
+            <button id="nextPage" ${S.currentPage===totalPages?'disabled':''}>下一页 ▶</button>`;
+        $('prevPage')?.addEventListener('click',()=>{if(S.currentPage>1){S.currentPage--;renderAll();}});
+        $('nextPage')?.addEventListener('click',()=>{if(S.currentPage<totalPages){S.currentPage++;renderAll();}});
+    }
+
+    function refreshSubjectSelects() {
+        const subs=S.currentSubjects;
+        const opts=subs.map(s=>`<option value="${s}">${s}</option>`).join('');
+        $('modalSubject').innerHTML=opts;
+        const fv=$('filterSubject').value;
+        $('filterSubject').innerHTML='<option value="all">全部科目</option>'+opts;
+        if(fv!=='all'&&subs.includes(fv))$('filterSubject').value=fv;else $('filterSubject').value='all';
+    }
+
+    // ──── 操作函数 ────────────────────────────────
+    async function toggleImportant(id) {
+        if(S.viewMode!=='self')return;
+        const q=S.allQuestions.find(qq=>qq.id===id);if(!q)return;
+        q.important=!q.important;
+        try{await api.mode.saveQuestion(q);renderAll();}catch(e){toast('操作失败','error');}
+    }
+
+    async function deleteQ(id) {
+        if(S.viewMode!=='self')return;
+        if(!confirm('确定删除？不可恢复。'))return;
+        try{
+            const q=S.allQuestions.find(qq=>qq.id===id);
+            if(q?.imageId) try{await api.mode.deleteImage(q.imageId);}catch(e){}
+            await api.mode.deleteQuestion(id);
+            S.allQuestions=S.allQuestions.filter(qq=>qq.id!==id);
+            toast('已删除','success');renderAll();
+        }catch(e){toast('删除失败: '+e.message,'error');}
+    }
+
+    function resetModal() {
+        $('editId').value='';
+        const fv=$('filterSubject').value;
+        if(fv!=='all'&&S.currentSubjects.includes(fv))$('modalSubject').value=fv;
+        else if(S.currentSubjects.length)$('modalSubject').value=S.currentSubjects[0];
+        $('modalCategory').value='';$('modalKnowledge').value='';$('modalLevel').value='medium';
+        $('modalQuestionText').value='';$('modalAnalysis').value='';$('modalImportant').checked=false;
+        $('modalImageFile').value='';$('imagePreviewContainer').innerHTML='';
+        S.currentImageDataUrl=null;S.currentEditImageId=null;
+        $('modalTitle').textContent='📝 新建错题';
+    }
+
+    function openEditModal(id) {
+        const q=S.allQuestions.find(x=>x.id===id);if(!q)return;
+        $('editId').value=q.id;$('modalSubject').value=q.subject;
+        $('modalCategory').value=q.category||'';$('modalKnowledge').value=q.knowledgePoints||'';
+        $('modalLevel').value=q.level||'medium';$('modalQuestionText').value=q.questionText||'';
+        $('modalAnalysis').value=q.analysis||'';$('modalImportant').checked=!!q.important;
+        S.currentEditImageId=q.imageId||null;S.currentImageDataUrl=null;
+        $('imagePreviewContainer').innerHTML='';$('modalImageFile').value='';
+        if(q.imageId) loadExistingImage(q.imageId);
+        $('modalTitle').textContent='✏️ 编辑错题';
+        $('questionModal').style.display='flex';
+    }
+
+    async function loadExistingImage(imgId) {
+        let url=null;
+        try{
+            if(S.viewMode==='self') url=await api.mode.getImage(imgId);
+            else url=await api.mode.getExploreImage(S.viewedUserId,imgId);
+        }catch(e){}
+        if(url){S.currentImageDataUrl=url;$('imagePreviewContainer').innerHTML=`<img src="${url}" class="img-preview">`;}
+    }
+
+    async function saveCurrentQuestion() {
+        if(S.viewMode!=='self'){toast('只读模式','warning');return;}
+        const subject=$('modalSubject').value;
+        if(!subject){toast('请选科目','warning');return;}
+        const isEdit=!!$('editId').value;
+        const id=isEdit?Number($('editId').value):Date.now();
+        let imageId=S.currentEditImageId;
+
+        if(S.currentImageDataUrl){
+            imageId=`${id}_img_${Date.now()}`;
+            await api.mode.uploadImage(imageId,S.currentImageDataUrl);
+            if(isEdit&&S.currentEditImageId&&S.currentEditImageId!==imageId){
+                try{await api.mode.deleteImage(S.currentEditImageId);}catch(e){}
+            }
+        }else if(!S.currentImageDataUrl&&isEdit&&S.currentEditImageId){
+            try{await api.mode.deleteImage(S.currentEditImageId);}catch(e){}
+            imageId=null;
+        }
+
+        const q={
+            id,subject,category:$('modalCategory').value.trim(),
+            knowledgePoints:$('modalKnowledge').value.trim(),level:$('modalLevel').value,
+            questionText:$('modalQuestionText').value.trim(),analysis:$('modalAnalysis').value.trim(),
+            important:$('modalImportant').checked,imageId,
+            createTime:isEdit?(S.allQuestions.find(qq=>qq.id===id)?.createTime||Date.now()):Date.now(),
+        };
+
+        try{
+            await api.mode.saveQuestion(q);
+            toast('保存成功','success');
+        }catch(e){toast('保存失败: '+e.message,'error');return;}
+
+        await loadAllQuestions();
+        $('questionModal').style.display='none';resetModal();renderAll();
+    }
+
+    async function showDetail(id) {
+        const q=S.allQuestions.find(x=>x.id===id);if(!q)return;
+        let imgUrl=null;
+        if(q.imageId){
+            try{
+                if(S.viewMode==='self')imgUrl=await api.mode.getImage(q.imageId);
+                else imgUrl=await api.mode.getExploreImage(S.viewedUserId,q.imageId);
+            }catch(e){}
+        }
+        const lm={easy:'🟢 简单',medium:'🟡 中等',hard:'🔴 困难'};
+        $('detailContent').innerHTML=`
+            <h3>📋 错题详情</h3>
+            <p><span class="detail-label">科目：</span>${escapeHtml(q.subject)}</p>
+            <p><span class="detail-label">分类：</span>${escapeHtml(q.category||'无')}</p>
+            <p><span class="detail-label">知识点：</span>${escapeHtml(q.knowledgePoints||'无')}</p>
+            <p><span class="detail-label">难度：</span>${lm[q.level]||'🟡 中等'}</p>
+            <p><span class="detail-label">重点：</span>${q.important?'⭐是':'否'}</p>
+            <p><span class="detail-label">时间：</span>${formatTime(q.createTime||q.create_time)}</p>
+            <hr style="margin:10px 0;border-color:#f1f5f9;">
+            <p><span class="detail-label">📄 题目：</span></p>
+            <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${escapeHtml(q.questionText||'（无）')}</div>
+            <p><span class="detail-label">📖 解析：</span></p>
+            <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${escapeHtml(q.analysis||'（无）')}</div>
+            ${imgUrl?`<p><span class="detail-label">📸 配图：</span></p><img src="${imgUrl}" class="detail-img">`:''}
+            ${S.viewMode==='other'?'<p style="color:#e67e22;margin-top:6px;">🔒 只读模式</p>':''}
+        `;
+        $('detailModal').style.display='flex';
+    }
+
+    // ──── 数据互访 ────────────────────────────────
+    function switchToSelfMode() {
+        S.viewMode='self';S.viewedUserId=null;S.viewedUserName='';
+        $('viewModeHint').innerHTML='';
+        $('newQuestionBtn').disabled=false;$('exportBackupBtn').disabled=false;$('importBackupBtn').disabled=false;
+        refreshAll();
+    }
+
+    async function switchToOtherMode(userId,userName) {
+        S.viewMode='other';S.viewedUserId=userId;S.viewedUserName=userName;
+        $('viewModeHint').innerHTML=`<span class="readonly-badge">📖 正在查看 ${escapeHtml(userName)} 的错题集（只读）</span> <button id="exitOtherModeBtn" class="small outline">返回我的</button>`;
+        $('newQuestionBtn').disabled=true;$('exportBackupBtn').disabled=true;$('importBackupBtn').disabled=true;
+        await loadAllQuestions();await loadSubjects();renderAll();
+        setTimeout(()=>{$('exitOtherModeBtn')?.addEventListener('click',switchToSelfMode);},100);
+    }
+
+    async function exploreUser(username) {
+        if(!username){toast('请输入用户名','warning');return;}
+        try{
+            const users=await api.mode.getExploreUsers();
+            const target=users.find(u=>u.username===username);
+            if(!target){toast('用户不存在','error');return;}
+            if(target.id===uid())switchToSelfMode();
+            else await switchToOtherMode(target.id,target.username);
+        }catch(e){toast('探索失败: '+e.message,'error');}
+    }
+
+    // ──── 管理员 ──────────────────────────────────
+    async function showAdminPanel() {
+        try{
+            let users;
+            if(S.mode==='supabase'){
+                users=await sbApi.getAdminStats();
+            }else{
+                const res=await fetch(`${S.serverUrl.replace(/\/+$/,'')}/api/admin/users`,{headers:{'Authorization':`Bearer ${S.token}`}});
+                users=(await res.json()).users;
+            }
+            $('adminUserList').innerHTML=`
+                <table class="admin-table"><thead><tr><th>用户名</th><th>角色</th><th>错题数</th><th>图片数</th><th>注册时间</th><th>操作</th></tr></thead>
+                <tbody>${users.map(u=>`<tr>
+                    <td>${escapeHtml(u.username||u.display_name||'')}</td>
+                    <td>${u.role==='admin'?'👑管理员':'👤用户'}</td>
+                    <td>${u.question_count||0}</td><td>${u.image_count||0}</td>
+                    <td style="font-size:0.7rem;">${u.created_at?new Date(u.created_at).toLocaleDateString():'-'}</td>
+                    <td><button class="small outline view-other-btn" data-id="${u.id}" data-name="${escapeHtml(u.username||u.display_name||'')}">📖查看</button>
+                    ${u.role!=='admin'?`<button class="small danger del-user-btn" data-id="${u.id}" data-name="${escapeHtml(u.username||u.display_name||'')}">🗑️</button>`:''}</td>
+                </tr>`).join('')}</tbody></table>`;
+            $('adminModal').querySelectorAll('.view-other-btn').forEach(b=>{
+                b.onclick=async()=>{$('adminModal').style.display='none';if(b.dataset.id===uid())switchToSelfMode();else await switchToOtherMode(b.dataset.id,b.dataset.name);};
+            });
+            $('adminModal').querySelectorAll('.del-user-btn').forEach(b=>{
+                b.onclick=async()=>{
+                    if(!confirm(`确定删除用户「${b.dataset.name}」及所有数据？不可恢复！`))return;
+                    try{await api.mode.deleteUser(b.dataset.id);toast('已删除','success');showAdminPanel();}catch(e){toast('删除失败','error');}
+                };
+            });
+            $('adminModal').style.display='flex';
+        }catch(e){toast('加载失败: '+e.message,'error');}
+    }
+
+    // ──── 导出/导入 ──────────────────────────────
+    async function exportData() {
+        if(S.viewMode!=='self'){toast('只能导出自己的','warning');return;}
+        try{
+            const data=await api.mode.exportBackup();
+            const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+            const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+            a.download=`mistake_backup_${S.user.username}_${new Date().toISOString().slice(0,10)}.json`;a.click();
+            toast('导出成功','success');
+        }catch(e){toast('导出失败: '+e.message,'error');}
+    }
+
+    function importData(file) {
+        if(S.viewMode!=='self'){toast('只能导入到自己的','warning');return;}
+        const r=new FileReader();
+        r.onload=async e=>{
+            try{
+                const data=JSON.parse(e.target.result);
+                await api.mode.importBackup(data);
+                toast('导入成功','success');
+                await loadAllQuestions();renderAll();
+            }catch(err){toast('导入失败: '+err.message,'error');}
+        };
+        r.readAsText(file);
+    }
+
+    // ──── 打印 ────────────────────────────────────
+    function printPDF() {
+        let html=`<html><head><meta charset="UTF-8"><title>错题集</title>
+        <style>body{font-family:'PingFang SC',sans-serif;padding:20px;color:#1e2f3e;}
+        .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:14px;page-break-inside:avoid;}
+        h4{color:#2c3e66;} .tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;} .tag{background:#f1f5f9;padding:2px 8px;border-radius:10px;font-size:11px;}
+        .content,.analysis{margin:6px 0;line-height:1.6;white-space:pre-wrap;} .analysis{background:#f8fafc;padding:8px;border-radius:8px;}
+        @media print{body{-webkit-print-color-adjust:exact;}}</style></head><body>
+        <h2>📚 错题集${S.viewMode==='other'?'（来自:'+escapeHtml(S.viewedUserName)+'）':''}</h2>`;
+        S.filteredQuestions.forEach(q=>{
+            html+=`<div class="card"><h4>${escapeHtml(q.subject)} — ${escapeHtml(q.category||'未分类')}</h4>
+            <div class="tags"><span class="tag">知识点:${escapeHtml(q.knowledgePoints||'无')}</span><span class="tag">难度:${q.level==='easy'?'简单':q.level==='hard'?'困难':'中等'}</span>${q.important?'<span class="tag">⭐重点</span>':''}</div>
+            <div class="content"><strong>题目：</strong>${escapeHtml(q.questionText||'无')}</div>
+            <div class="analysis"><strong>解析：</strong>${escapeHtml(q.analysis||'无')}</div>
+            <div style="font-size:11px;color:#999;">${formatTime(q.createTime||q.create_time)}</div></div>`;
+        });
+        html+='</body></html>';
+        const w=window.open('','_blank','width=800,height=600');
+        if(!w){toast('请允许弹窗','warning');return;}
+        w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
+    }
+
+    // ──── 刷新 ────────────────────────────────────
+    async function refreshAll() {
+        await loadAllQuestions();await loadSubjects();renderAll();
+    }
+
+    // ──── 登录后初始化 ──────────────────────────
+    async function afterLogin(user) {
+        S.user=user;
+        S.viewMode='self';S.viewedUserId=null;S.viewedUserName='';
+        $('currentUsername').textContent=user.username;
+        $('adminPanelBtn').style.display=user.role==='admin'?'inline-flex':'none';
+        $('newQuestionBtn').disabled=false;$('exportBackupBtn').disabled=false;$('importBackupBtn').disabled=false;
+        $('viewModeHint').innerHTML='';
+        if(window.innerWidth<=768)$('filterBar').classList.add('filter-collapsed');
+        else $('filterBar').classList.remove('filter-collapsed');
+        $('authContainer').style.display='none';$('mainApp').style.display='block';
+        // 保存配置
+        if(S.mode==='supabase'){
+            localStorage.setItem('mc_sb_url',$('sbUrl').value.trim());
+            localStorage.setItem('mc_sb_key',$('sbKey').value.trim());
+        }else{
+            localStorage.setItem('mc_server_url',S.serverUrl);
+            localStorage.setItem('mc_token',S.token);
+        }
+        localStorage.setItem('mc_mode',S.mode);
+        await refreshAll();
+    }
+
+    function logout() {
+        if(S.mode==='supabase'&&S.sb)S.sb.auth.signOut();
+        S.user=null;S.token=null;S.allQuestions=[];
+        localStorage.removeItem('mc_token');
+        $('authContainer').style.display='block';$('mainApp').style.display='none';
+        $('loginPanel').style.display='block';$('registerPanel').style.display='none';
+    }
+
+    // ──── 事件绑定 ──────────────────────────────
+
+    // 模式切换
+    document.querySelectorAll('.mode-tab').forEach(tab=>{
+        tab.onclick=()=>{
+            document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+            tab.classList.add('active');
+            S.mode=tab.dataset.mode;
+            $('supabaseConfig').classList.toggle('show',S.mode==='supabase');
+            $('serverConfig').classList.toggle('show',S.mode==='server');
+        };
+    });
+
+    // 登录
+    $('doLoginBtn').onclick=async()=>{
+        const username=$('loginUsername').value.trim(),password=$('loginPassword').value;
+        if(!username||!password){toast('请填写用户名和密码','warning');return;}
+
+        if(S.mode==='supabase'){
+            const url=$('sbUrl').value.trim(),key=$('sbKey').value.trim();
+            if(!url||!key){toast('请填写 Supabase URL 和 Key','warning');return;}
+            S.sb=supabase.createClient(url,key);
+            try{
+                const user=await sbApi.login(username,password);
+                await afterLogin(user);
+                toast(`欢迎回来，${username}！`,'success');
+            }catch(e){toast('登录失败: '+e.message,'error');}
+        }else{
+            S.serverUrl=$('serverUrlInput').value.trim()||'http://localhost:3030';
+            try{
+                const user=await serverApi.login(username,password);
+                S.token=user.token;
+                await afterLogin({id:user.id,username:user.username,role:user.role});
+                toast(`欢迎回来，${username}！`,'success');
+            }catch(e){toast('登录失败: '+e.message,'error');}
+        }
+    };
+
+    // 注册
+    $('doRegisterBtn').onclick=async()=>{
+        const username=$('regUsername').value.trim(),password=$('regPassword').value;
+        if(!username||!password){toast('请填写完整','warning');return;}
+        if(username.length<2||username.length>20){toast('用户名2-20字符','warning');return;}
+        if(password.length<4){toast('密码至少4字符','warning');return;}
+
+        if(S.mode==='supabase'){
+            const url=$('sbUrl').value.trim(),key=$('sbKey').value.trim();
+            if(!url||!key){toast('请填写 Supabase URL 和 Key','warning');return;}
+            S.sb=supabase.createClient(url,key);
+            try{
+                await sbApi.register(username,password);
+                toast('注册成功！请登录','success');
+                $('backToLoginBtn').click();
+                $('loginUsername').value=username;$('loginPassword').value='';
+            }catch(e){toast('注册失败: '+e.message,'error');}
+        }else{
+            S.serverUrl=$('serverUrlInput').value.trim()||'http://localhost:3030';
+            try{
+                await serverApi.register(username,password);
+                toast('注册成功！请登录','success');
+                $('backToLoginBtn').click();
+                $('loginUsername').value=username;$('loginPassword').value='';
+            }catch(e){toast('注册失败: '+e.message,'error');}
+        }
+    };
+
+    $('showRegisterBtn').onclick=e=>{e.preventDefault();$('loginPanel').style.display='none';$('registerPanel').style.display='block';};
+    $('backToLoginBtn').onclick=e=>{e.preventDefault();$('loginPanel').style.display='block';$('registerPanel').style.display='none';};
+    $('logoutBtn').onclick=logout;
+    $('adminPanelBtn').onclick=showAdminPanel;
+    $('closeAdminModal').onclick=()=>{$('adminModal').style.display='none';};
+    $('newQuestionBtn').onclick=()=>{if(S.viewMode!=='self'){toast('只读模式','warning');return;}resetModal();$('questionModal').style.display='flex';};
+    $('cancelModalBtn').onclick=()=>{$('questionModal').style.display='none';resetModal();};
+    $('saveQuestionBtn').onclick=saveCurrentQuestion;
+    $('addSubjectBtn').onclick=async()=>{
+        if(S.viewMode!=='self'){toast('只读模式','warning');return;}
+        const name=prompt('新科目名称：');if(!name||!name.trim())return;
+        if(S.currentSubjects.includes(name.trim())){toast('已存在','warning');return;}
+        S.currentSubjects.push(name.trim());
+        await api.mode.saveSubjects(S.currentSubjects);
+        refreshSubjectSelects();toast(`已添加:${name}`,'success');
+    };
+    $('modalImageFile').onchange=async e=>{
+        const f=e.target.files[0];if(!f)return;
+        try{toast('压缩中...','info',800);const c=await compressImage(f);S.currentImageDataUrl=c;$('imagePreviewContainer').innerHTML=`<img src="${c}" class="img-preview"><div style="font-size:0.6rem;color:#2b6e3c;">✅ ${Math.round(c.length/1024)}KB</div>`;}catch(e){toast('处理失败','error');}
+    };
+    $('exploreBtn').onclick=()=>exploreUser($('exploreUsername').value.trim());
+    $('exploreUsername').onkeydown=e=>{if(e.key==='Enter')exploreUser($('exploreUsername').value.trim());};
+    $('printPdfBtn').onclick=printPDF;
+    $('exportBackupBtn').onclick=exportData;
+    $('importBackupBtn').onclick=()=>{
+        const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+        inp.onchange=e=>{if(e.target.files[0])importData(e.target.files[0]);};
+        document.body.appendChild(inp);inp.click();setTimeout(()=>inp.remove(),100);
+    };
+    $('closeDetailBtn').onclick=()=>{$('detailModal').style.display='none';};
+    $('filterSubject').onchange=renderAll;$('filterLevel').onchange=renderAll;
+    $('filterImportant').onchange=renderAll;$('searchInput').oninput=renderAll;
+    $('filterToggle').onclick=()=>{
+        $('filterBar').classList.toggle('filter-collapsed');
+        $('filterToggle').textContent=$('filterBar').classList.contains('filter-collapsed')?'🔍 筛选与搜索 ▾':'🔍 筛选与搜索 ▴';
+    };
+    window.onclick=e=>{
+        if(e.target===$('questionModal')){$('questionModal').style.display='none';resetModal();}
+        if(e.target===$('detailModal'))$('detailModal').style.display='none';
+        if(e.target===$('adminModal'))$('adminModal').style.display='none';
+    };
+    document.onkeydown=e=>{
+        if(e.key==='Escape'){
+            if($('questionModal').style.display==='flex'){$('questionModal').style.display='none';resetModal();}
+            $('detailModal').style.display='none';$('adminModal').style.display='none';
+        }
+    };
+
+    // ──── 启动 ────────────────────────────────────
+    function init() {
+        // 恢复配置
+        const savedMode=localStorage.getItem('mc_mode');
+        if(savedMode)S.mode=savedMode;
+        if(S.mode==='supabase'){
+            document.querySelectorAll('.mode-tab').forEach(t=>{t.classList.toggle('active',t.dataset.mode==='supabase');});
+            $('supabaseConfig').classList.add('show');$('serverConfig').classList.remove('show');
+        }else{
+            document.querySelectorAll('.mode-tab').forEach(t=>{t.classList.toggle('active',t.dataset.mode==='server');});
+            $('supabaseConfig').classList.remove('show');$('serverConfig').classList.add('show');
+        }
+        const savedUrl=localStorage.getItem('mc_sb_url');if(savedUrl)$('sbUrl').value=savedUrl;
+        const savedKey=localStorage.getItem('mc_sb_key');if(savedKey)$('sbKey').value=savedKey;
+        const savedServer=localStorage.getItem('mc_server_url');if(savedServer)$('serverUrlInput').value=savedServer;
+
+        // 尝试自动恢复 Supabase 会话
+        if(S.mode==='supabase'&&savedUrl&&savedKey){
+            S.sb=supabase.createClient(savedUrl,savedKey);
+            S.sb.auth.getSession().then(({data})=>{
+                if(data.session){
+                    const email=data.session.user.email;
+                    const username=email.split('@')[0];
+                    S.sb.from('user_profiles').select('role').eq('user_id',data.session.user.id).single().then(({data:profile})=>{
+                        afterLogin({id:data.session.user.id,username,role:profile?.role||'user'});
+                    });
+                }
+            }).catch(()=>{});
+        }
+
+        // 尝试自动恢复 Server 会话
+        if(S.mode==='server'){
+            const savedToken=localStorage.getItem('mc_token');
+            if(savedToken&&savedServer){
+                S.serverUrl=savedServer;S.token=savedToken;
+                fetch(`${savedServer.replace(/\/+$/,'')}/api/auth/me`,{headers:{'Authorization':`Bearer ${savedToken}`}})
+                .then(r=>r.json()).then(data=>{
+                    if(data.user)afterLogin({id:data.user.id,username:data.user.username,role:data.user.role});
+                }).catch(()=>{});
+            }
+        }
+
+        $('authContainer').style.display='block';$('mainApp').style.display='none';
+        $('loginPanel').style.display='block';$('registerPanel').style.display='none';
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
