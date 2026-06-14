@@ -276,9 +276,17 @@
         <div class="form-row"><label>📂 分类</label><input type="text" id="modalCategory" placeholder="选择题/填空题..."></div>
         <div class="form-row"><label>🧠 知识点（逗号分隔）</label><input type="text" id="modalKnowledge" placeholder="二次函数, 欧姆定律"></div>
         <div class="form-row"><label>⭐ 难度</label><select id="modalLevel"><option value="easy">🟢 简单</option><option value="medium" selected>🟡 中等</option><option value="hard">🔴 困难</option></select></div>
-        <div class="form-row"><label>📄 题目内容</label><textarea id="modalQuestionText" placeholder="原题描述..."></textarea></div>
-        <div class="form-row"><label>📸 拍照/配图</label><input type="file" id="modalImageFile" accept="image/*" capture="environment"><div id="imagePreviewContainer"></div><div style="font-size:0.6rem;color:#94a3b8;margin-top:4px;">📱 手机点击直接拍照，自动压缩</div></div>
-        <div class="form-row"><label>📖 解析/错因</label><textarea id="modalAnalysis" placeholder="正确解析和错误原因..."></textarea></div>
+        <div class="form-row">
+            <label>📄 题目内容 <button type="button" class="small outline inline-cam-btn" data-target="modalQuestionText" style="font-size:0.65rem;min-height:24px;padding:2px 8px;">📸 插图片</button></label>
+            <textarea id="modalQuestionText" placeholder="原题描述..."></textarea>
+            <input type="file" id="modalQuestionImageFile" accept="image/*" capture="environment" style="display:none;">
+        </div>
+        <div class="form-row"><label>📸 题目标题图</label><input type="file" id="modalImageFile" accept="image/*" capture="environment"><div id="imagePreviewContainer"></div><div style="font-size:0.6rem;color:#94a3b8;margin-top:4px;">📱 手机点击直接拍照，自动压缩</div></div>
+        <div class="form-row">
+            <label>📖 解析/错因 <button type="button" class="small outline inline-cam-btn" data-target="modalAnalysis" style="font-size:0.65rem;min-height:24px;padding:2px 8px;">📸 插图片</button></label>
+            <textarea id="modalAnalysis" placeholder="正确解析和错误原因..."></textarea>
+            <input type="file" id="modalAnalysisImageFile" accept="image/*" capture="environment" style="display:none;">
+        </div>
         <div class="form-row checkbox-row"><input type="checkbox" id="modalImportant"><label for="modalImportant" style="margin:0;">⭐ 标记为重点</label></div>
         <div class="flex-btns"><button id="cancelModalBtn" class="outline">取消</button><button id="saveQuestionBtn" class="primary">💾 保存</button></div>
     </div>
@@ -613,7 +621,7 @@
             return;
         }
         $('tableBody').innerHTML = items.map(q=>{
-            const preview=q.questionText?(q.questionText.length>45?q.questionText.substring(0,45)+'...':q.questionText):'（无内容）';
+            const preview=stripImageTags(q.questionText?(q.questionText.length>45?q.questionText.substring(0,45)+'...':q.questionText):'（无内容）');
             const kp=q.knowledgePoints?(q.knowledgePoints.length>22?q.knowledgePoints.substring(0,22)+'…':q.knowledgePoints):'未填';
             const lm={easy:['badge-easy','简单'],medium:['badge-medium','中等'],hard:['badge-hard','困难']};
             const [lc,ln]=lm[q.level]||lm.medium;
@@ -639,7 +647,7 @@
             return;
         }
         $('cardList').innerHTML=items.map(q=>{
-            const preview=q.questionText?(q.questionText.length>55?q.questionText.substring(0,55)+'...':q.questionText):'（无内容）';
+            const preview=stripImageTags(q.questionText?(q.questionText.length>55?q.questionText.substring(0,55)+'...':q.questionText):'（无内容）');
             const le={easy:'🟢',medium:'🟡',hard:'🔴'};
             const isSelf=S.viewMode==='self';
             const acts=isSelf
@@ -724,7 +732,8 @@
         else if(S.currentSubjects.length)$('modalSubject').value=S.currentSubjects[0];
         $('modalCategory').value='';$('modalKnowledge').value='';$('modalLevel').value='medium';
         $('modalQuestionText').value='';$('modalAnalysis').value='';$('modalImportant').checked=false;
-        $('modalImageFile').value='';$('imagePreviewContainer').innerHTML='';
+        $('modalImageFile').value='';$('modalQuestionImageFile').value='';$('modalAnalysisImageFile').value='';
+        $('imagePreviewContainer').innerHTML='';
         S.currentImageDataUrl=null;S.currentEditImageId=null;
         $('modalTitle').textContent='📝 新建错题';
     }
@@ -797,6 +806,8 @@
             }catch(e){}
         }
         const lm={easy:'🟢 简单',medium:'🟡 中等',hard:'🔴 困难'};
+        const questionHtml=await renderInlineImages(q.questionText||'（无）');
+        const analysisHtml=await renderInlineImages(q.analysis||'（无）');
         $('detailContent').innerHTML=`
             <h3>📋 错题详情</h3>
             <p><span class="detail-label">科目：</span>${escapeHtml(q.subject)}</p>
@@ -807,10 +818,10 @@
             <p><span class="detail-label">时间：</span>${formatTime(q.createTime||q.create_time)}</p>
             <hr style="margin:10px 0;border-color:#f1f5f9;">
             <p><span class="detail-label">📄 题目：</span></p>
-            <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${escapeHtml(q.questionText||'（无）')}</div>
+            <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${questionHtml}</div>
             <p><span class="detail-label">📖 解析：</span></p>
-            <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${escapeHtml(q.analysis||'（无）')}</div>
-            ${imgUrl?`<p><span class="detail-label">📸 配图：</span></p><img src="${imgUrl}" class="detail-img">`:''}
+            <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${analysisHtml}</div>
+            ${imgUrl?`<p><span class="detail-label">📸 题目标题图：</span></p><img src="${imgUrl}" class="detail-img">`:''}
             ${S.viewMode==='other'?'<p style="color:#e67e22;margin-top:6px;">🔒 只读模式</p>':''}
         `;
         $('detailModal').style.display='flex';
@@ -914,8 +925,8 @@
         S.filteredQuestions.forEach(q=>{
             html+=`<div class="card"><h4>${escapeHtml(q.subject)} — ${escapeHtml(q.category||'未分类')}</h4>
             <div class="tags"><span class="tag">知识点:${escapeHtml(q.knowledgePoints||'无')}</span><span class="tag">难度:${q.level==='easy'?'简单':q.level==='hard'?'困难':'中等'}</span>${q.important?'<span class="tag">⭐重点</span>':''}</div>
-            <div class="content"><strong>题目：</strong>${escapeHtml(q.questionText||'无')}</div>
-            <div class="analysis"><strong>解析：</strong>${escapeHtml(q.analysis||'无')}</div>
+            <div class="content"><strong>题目：</strong>${escapeHtml(stripImageTags(q.questionText||'无'))}</div>
+            <div class="analysis"><strong>解析：</strong>${escapeHtml(stripImageTags(q.analysis||'无'))}</div>
             <div style="font-size:11px;color:#999;">${formatTime(q.createTime||q.create_time)}</div></div>`;
         });
         html+='</body></html>';
@@ -1046,6 +1057,65 @@
         const f=e.target.files[0];if(!f)return;
         try{toast('压缩中...','info',800);const c=await compressImage(f);S.currentImageDataUrl=c;$('imagePreviewContainer').innerHTML=`<img src="${c}" class="img-preview"><div style="font-size:0.6rem;color:#2b6e3c;">✅ ${Math.round(c.length/1024)}KB</div>`;}catch(e){toast('处理失败','error');}
     };
+
+    // 内联拍照按钮：题目内容 & 解析
+    document.querySelectorAll('.inline-cam-btn').forEach(btn=>{
+        btn.onclick=()=>{
+            const targetId=btn.dataset.target;
+            const fileInputId=targetId==='modalQuestionText'?'modalQuestionImageFile':'modalAnalysisImageFile';
+            $(fileInputId).click();
+        };
+    });
+    $('modalQuestionImageFile').onchange=async e=>{await insertInlineImage(e,'modalQuestionText');};
+    $('modalAnalysisImageFile').onchange=async e=>{await insertInlineImage(e,'modalAnalysis');};
+
+    async function insertInlineImage(e, textareaId){
+        const f=e.target.files[0];if(!f)return;
+        try{
+            toast('压缩上传中...','info');
+            const compressed=await compressImage(f);
+            const imgId='inline_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+            await api.mode.uploadImage(imgId,compressed);
+            const tag='[img:'+imgId+']';
+            const ta=$(textareaId);
+            const start=ta.selectionStart,end=ta.selectionEnd;
+            ta.value=ta.value.substring(0,start)+tag+ta.value.substring(end);
+            ta.selectionStart=ta.selectionEnd=start+tag.length;
+            ta.focus();
+            toast('图片已插入','success',1200);
+        }catch(e){toast('插入失败:'+e.message,'error');}
+        e.target.value='';
+    }
+
+    // 渲染文本中的 [img:ID] 为实际图片
+    async function renderInlineImages(text){
+        if(!text)return text;
+        const re=/\[img:([^\]]+)\]/g;
+        let match,result=text;
+        const ids=[];
+        while((match=re.exec(text))!==null)ids.push(match[1]);
+        if(!ids.length)return escapeHtml(text);
+        // 批量加载图片
+        const imgMap={};
+        for(const id of ids){
+            try{
+                let url=null;
+                if(S.viewMode==='self')url=await api.mode.getImage(id);
+                else url=await api.mode.getExploreImage(S.viewedUserId,id);
+                if(url)imgMap[id]=url;
+            }catch(e){}
+        }
+        result=escapeHtml(text).replace(/\[img:([^\]]+)\]/g,(m,id)=>{
+            if(imgMap[id])return `<br><img src="${imgMap[id]}" style="max-width:100%;max-height:300px;border-radius:8px;margin:8px 0;"><br>`;
+            return '[📷图片]';
+        });
+        return result;
+    }
+
+    // 预览用：剥离图片标签
+    function stripImageTags(text){
+        return (text||'').replace(/\[img:[^\]]+\]/g,'[📷]');
+    }
     $('exploreBtn').onclick=()=>exploreUser($('exploreUsername').value.trim());
     $('exploreUsername').onkeydown=e=>{if(e.key==='Enter')exploreUser($('exploreUsername').value.trim());};
     $('printPdfBtn').onclick=printPDF;
