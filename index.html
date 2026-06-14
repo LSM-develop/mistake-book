@@ -460,7 +460,7 @@
             if (error) throw new Error(error.message);
         },
         async getImage(id) {
-            const { data } = await S.sb.from('images').select('data').eq('id', id).eq('user_id', uid()).single();
+            const { data } = await S.sb.from('images').select('data').eq('id', id).eq('user_id', uid()).maybeSingle();
             return data ? data.data : null;
         },
         async deleteImage(id) {
@@ -479,7 +479,7 @@
             return (data||[]).map(q => ({ ...q, knowledgePoints: q.knowledge_points, important: !!q.important }));
         },
         async getExploreImage(userId, imgId) {
-            const { data } = await S.sb.from('images').select('data').eq('id', imgId).eq('user_id', userId).single();
+            const { data } = await S.sb.from('images').select('data').eq('id', imgId).eq('user_id', userId).maybeSingle();
             return data ? data.data : null;
         },
 
