@@ -460,7 +460,10 @@
             if (error) throw new Error(error.message);
         },
         async getImage(id) {
-            const { data } = await S.sb.from('images').select('data').eq('id', id).eq('user_id', uid()).maybeSingle();
+            const { data, error } = await S.sb.from('images').select('data').eq('id', id).eq('user_id', uid()).maybeSingle();
+            if(error) console.warn('getImage error:',id,error.message);
+            if(!data) console.warn('getImage not found:',id,'uid:',uid());
+            else console.log('getImage OK:',id,'size:',(data.data||'').length);
             return data ? data.data : null;
         },
         async deleteImage(id) {
@@ -1174,8 +1177,10 @@
         if(!localStorage.getItem('mc_mode')) localStorage.setItem('mc_mode','supabase');
 
         // 尝试自动恢复 Supabase 会话
+        console.log('Supabase init:',savedUrl,'mode:',S.mode,'key length:',savedKey?.['length']);
         if(S.mode==='supabase'&&savedUrl&&savedKey){
             S.sb=supabase.createClient(savedUrl,savedKey);
+            console.log('Supabase client created:',savedUrl);
             S.sb.auth.getSession().then(({data})=>{
                 if(data.session){
                     const email=data.session.user.email;
