@@ -246,7 +246,10 @@
                 <div class="filter-group"><label>📚</label><select id="filterSubject"><option value="all">全部科目</option></select></div>
                 <div class="filter-group"><label>⭐</label><select id="filterLevel"><option value="all">全部</option><option value="easy">简单</option><option value="medium">中等</option><option value="hard">困难</option></select></div>
                 <div class="filter-group"><label>🔖</label><select id="filterImportant"><option value="all">全部</option><option value="true">重点</option><option value="false">非重点</option></select></div>
-                <div class="filter-group" style="flex:1;"><input type="text" id="searchInput" placeholder="🔍 搜索..." class="search-input"></div>
+                <div class="filter-group" style="flex:1;position:relative;">
+                    <input type="text" id="searchInput" placeholder="🔍 搜索题目/解析/知识点..." class="search-input" autocomplete="off">
+                    <button id="clearSearchBtn" class="small" style="display:none;min-height:22px;padding:0 6px;font-size:0.65rem;position:absolute;right:4px;">✕</button>
+                </div>
                 <button id="newQuestionBtn" class="primary">＋ 新建</button>
                 <button id="printPdfBtn" class="outline">🖨️</button>
                 <button id="exportBackupBtn" class="outline">📦</button>
@@ -645,16 +648,17 @@
             return;
         }
         $('tableBody').innerHTML = items.map(q=>{
-            const preview=stripImageTags(q.questionText?(q.questionText.length>45?q.questionText.substring(0,45)+'...':q.questionText):'（无内容）');
-            const kp=q.knowledgePoints?(q.knowledgePoints.length>22?q.knowledgePoints.substring(0,22)+'…':q.knowledgePoints):'未填';
+            const rawPreview=q.questionText?(q.questionText.length>45?q.questionText.substring(0,45)+'...':q.questionText):'（无内容）';
+            const preview=highlightSearch(stripImageTags(rawPreview));
+            const kp=highlightSearch(q.knowledgePoints?(q.knowledgePoints.length>22?q.knowledgePoints.substring(0,22)+'…':q.knowledgePoints):'未填');
             const lm={easy:['badge-easy','简单'],medium:['badge-medium','中等'],hard:['badge-hard','困难']};
             const [lc,ln]=lm[q.level]||lm.medium;
             const isSelf=S.viewMode==='self';
             const acts=isSelf
                 ?`<span class="view-detail" data-id="${q.id}">👁️</span><span class="edit-question" data-id="${q.id}">✏️</span><span class="delete-question" data-id="${q.id}">🗑️</span>`
                 :`<span class="view-detail" data-id="${q.id}">👁️</span><span style="opacity:0.4;">🔒</span>`;
-            return `<tr><td><span class="badge badge-subject">${escapeHtml(q.subject)}</span></td>
-                <td><div style="max-width:260px;">${escapeHtml(preview)}</div></td>
+            return `<tr><td><span class="badge badge-subject">${highlightSearch(q.subject)}</span></td>
+                <td><div style="max-width:260px;">${preview}</div></td>
                 <td><span class="badge badge-category">${escapeHtml(q.category||'未分类')}</span></td>
                 <td><span class="badge badge-knowledge">${escapeHtml(kp)}</span></td>
                 <td><span class="badge ${lc}">${ln}</span></td>
@@ -671,7 +675,8 @@
             return;
         }
         $('cardList').innerHTML=items.map(q=>{
-            const preview=stripImageTags(q.questionText?(q.questionText.length>55?q.questionText.substring(0,55)+'...':q.questionText):'（无内容）');
+            const rawCPreview=q.questionText?(q.questionText.length>55?q.questionText.substring(0,55)+'...':q.questionText):'（无内容）';
+            const cPreview=highlightSearch(stripImageTags(rawCPreview));
             const le={easy:'🟢',medium:'🟡',hard:'🔴'};
             const isSelf=S.viewMode==='self';
             const acts=isSelf
@@ -679,11 +684,11 @@
                 :`<span style="opacity:0.4;">🔒只读</span>`;
             return `<div class="question-card" data-id="${q.id}">
                 <div class="card-header"><div class="card-tags">
-                    <span class="badge badge-subject">${escapeHtml(q.subject)}</span>
+                    <span class="badge badge-subject">${highlightSearch(q.subject)}</span>
                     <span class="badge badge-${q.level}">${le[q.level]||'🟡'} ${q.level==='easy'?'简单':q.level==='hard'?'困难':'中等'}</span>
-                    ${q.category?`<span class="badge badge-category">${escapeHtml(q.category)}</span>`:''}
+                    ${q.category?`<span class="badge badge-category">${highlightSearch(q.category)}</span>`:''}
                 </div><span style="font-size:1.2rem;" class="star-icon-card ${q.important?'active':''}" data-id="${q.id}">${q.important?'⭐':'☆'}</span></div>
-                <div class="card-body"><div class="preview">${escapeHtml(preview)}</div></div>
+                <div class="card-body"><div class="preview">${cPreview}</div></div>
                 <div class="card-footer"><span>${formatTime(q.createTime||q.create_time)}</span><div class="card-actions">${acts}</div></div>
             </div>`;
         }).join('');
@@ -938,25 +943,88 @@
     }
 
     // ──── 打印 ────────────────────────────────────
-    function printPDF() {
-        let html=`<html><head><meta charset="UTF-8"><title>错题集</title>
-        <style>body{font-family:'PingFang SC',sans-serif;padding:20px;color:#1e2f3e;}
-        .card{border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:14px;page-break-inside:avoid;}
-        h4{color:#2c3e66;} .tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;} .tag{background:#f1f5f9;padding:2px 8px;border-radius:10px;font-size:11px;}
-        .content,.analysis{margin:6px 0;line-height:1.6;white-space:pre-wrap;} .analysis{background:#f8fafc;padding:8px;border-radius:8px;}
-        @media print{body{-webkit-print-color-adjust:exact;}}</style></head><body>
-        <h2>📚 错题集${S.viewMode==='other'?'（来自:'+escapeHtml(S.viewedUserName)+'）':''}</h2>`;
-        S.filteredQuestions.forEach(q=>{
-            html+=`<div class="card"><h4>${escapeHtml(q.subject)} — ${escapeHtml(q.category||'未分类')}</h4>
-            <div class="tags"><span class="tag">知识点:${escapeHtml(q.knowledgePoints||'无')}</span><span class="tag">难度:${q.level==='easy'?'简单':q.level==='hard'?'困难':'中等'}</span>${q.important?'<span class="tag">⭐重点</span>':''}</div>
-            <div class="content"><strong>题目：</strong>${escapeHtml(stripImageTags(q.questionText||'无'))}</div>
-            <div class="analysis"><strong>解析：</strong>${escapeHtml(stripImageTags(q.analysis||'无'))}</div>
-            <div style="font-size:11px;color:#999;">${formatTime(q.createTime||q.create_time)}</div></div>`;
-        });
+    async function printPDF() {
+        toast('正在加载图片准备打印...','info',2000);
+        const items = S.filteredQuestions;
+        if(!items.length){toast('没有可打印的错题','warning');return;}
+
+        // 预加载所有图片
+        const imgCache = {};
+        for(const q of items){
+            // 标题图
+            if(q.imageId){
+                try{imgCache[q.imageId]=S.viewMode==='self'?await api.mode.getImage(q.imageId):await api.mode.getExploreImage(S.viewedUserId,q.imageId);}catch(e){}
+            }
+            // 内联图片
+            for(const text of [q.questionText||'', q.analysis||'']){
+                const re=/\[img:([^\]]+)\]/g;let m;
+                while((m=re.exec(text))!==null){
+                    if(!imgCache[m[1]]){
+                        try{imgCache[m[1]]=S.viewMode==='self'?await api.mode.getImage(m[1]):await api.mode.getExploreImage(S.viewedUserId,m[1]);}catch(e){}
+                    }
+                }
+            }
+        }
+
+        const renderText=(text)=>{
+            if(!text)return '（无）';
+            return escapeHtml(text).replace(/\[img:([^\]]+)\]/g,(_,id)=>{
+                if(imgCache[id])return `<br><img src="${imgCache[id]}" style="max-width:100%;max-height:400px;border-radius:8px;margin:8px 0;"><br>`;
+                return '[📷]';
+            });
+        };
+
+        const lm={easy:'🟢 简单',medium:'🟡 中等',hard:'🔴 困难'};
+        let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>错题集</title>
+        <style>
+          *{margin:0;padding:0;box-sizing:border-box;}
+          body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;padding:30px;color:#1e2f3e;line-height:1.7;}
+          h1{text-align:center;margin-bottom:24px;color:#2c3e66;font-size:1.5rem;}
+          .card{page-break-inside:avoid;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:18px;background:#fff;}
+          .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;}
+          .card-header h3{margin:0;color:#2c3e66;font-size:1.1rem;}
+          .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:0.85rem;color:#64748b;}
+          .meta-row span{background:#f8fafc;padding:2px 10px;border-radius:12px;border:1px solid #e2e8f0;}
+          .section{margin:8px 0;}
+          .section-title{font-weight:700;font-size:0.85rem;color:#475569;margin-bottom:4px;}
+          .section-content{background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;font-size:0.9rem;}
+          .section-content img{max-width:100%;max-height:400px;border-radius:8px;margin:8px 0;display:block;}
+          .title-img{max-width:100%;max-height:350px;border-radius:8px;margin:8px 0;display:block;}
+          .timestamp{font-size:0.7rem;color:#94a3b8;margin-top:8px;text-align:right;}
+          @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;} .card{border-color:#ddd;}}
+        </style></head><body>
+        <h1>📚 错题集${S.viewMode==='other'?'（来自: '+escapeHtml(S.viewedUserName)+'）':''}</h1>
+        <p style="text-align:center;color:#94a3b8;margin-bottom:16px;">共 ${items.length} 道错题 · 打印时间: ${new Date().toLocaleString()}</p>`;
+
+        for(const q of items){
+            html+=`<div class="card">
+                <div class="card-header">
+                    <h3>📄 ${escapeHtml(q.subject)} — ${escapeHtml(q.category||'未分类')}</h3>
+                    <span style="font-size:1.2rem;">${q.important?'⭐重点':''}</span>
+                </div>
+                <div class="meta-row">
+                    <span>🧠 ${escapeHtml(q.knowledgePoints||'无')}</span>
+                    <span>${lm[q.level]||'🟡 中等'}</span>
+                    <span>${formatTime(q.createTime||q.create_time)}</span>
+                </div>`;
+            // 标题图
+            if(q.imageId&&imgCache[q.imageId]){
+                html+=`<div style="text-align:center;"><img src="${imgCache[q.imageId]}" class="title-img"></div>`;
+            }
+            // 题目内容
+            html+=`<div class="section"><div class="section-title">📄 题目内容</div><div class="section-content">${renderText(q.questionText)}</div></div>`;
+            // 解析
+            html+=`<div class="section"><div class="section-title">📖 解析 / 错因分析</div><div class="section-content">${renderText(q.analysis)}</div></div>`;
+            html+=`<div class="timestamp">录入时间: ${formatTime(q.createTime||q.create_time)}</div></div>`;
+        }
+
         html+='</body></html>';
-        const w=window.open('','_blank','width=800,height=600');
+        const w=window.open('','_blank','width=900,height=700');
         if(!w){toast('请允许弹窗','warning');return;}
-        w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
+        w.document.write(html);
+        w.document.close();
+        // 等图片加载完再打印
+        w.onload=()=>setTimeout(()=>{w.print();},600);
     }
 
     // ──── 刷新 ────────────────────────────────────
@@ -1140,6 +1208,17 @@
     function stripImageTags(text){
         return (text||'').replace(/\[img:[^\]]+\]/g,'[📷]');
     }
+
+    // 高亮搜索关键词
+    function highlightSearch(text){
+        if(!text)return'';
+        const kw=$('searchInput').value.trim().toLowerCase();
+        if(!kw)return escapeHtml(text);
+        const escaped=escapeHtml(text);
+        const kwEscaped=escapeHtml(kw);
+        const re=new RegExp('('+kwEscaped.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+        return escaped.replace(re,'<mark style="background:#fde68a;color:#1e2f3e;padding:0 2px;border-radius:2px;">$1</mark>');
+    }
     $('exploreBtn').onclick=()=>exploreUser($('exploreUsername').value.trim());
     $('exploreUsername').onkeydown=e=>{if(e.key==='Enter')exploreUser($('exploreUsername').value.trim());};
     $('printPdfBtn').onclick=printPDF;
@@ -1151,7 +1230,14 @@
     };
     $('closeDetailBtn').onclick=()=>{$('detailModal').style.display='none';};
     $('filterSubject').onchange=renderAll;$('filterLevel').onchange=renderAll;
-    $('filterImportant').onchange=renderAll;$('searchInput').oninput=renderAll;
+    $('filterImportant').onchange=renderAll;
+    let searchTimer;
+    $('searchInput').oninput=()=>{
+        clearTimeout(searchTimer);
+        searchTimer=setTimeout(renderAll,250); // 防抖
+        $('clearSearchBtn').style.display=$('searchInput').value?'inline-flex':'none';
+    };
+    $('clearSearchBtn').onclick=()=>{$('searchInput').value='';$('clearSearchBtn').style.display='none';renderAll();$('searchInput').focus();};
     $('filterToggle').onclick=()=>{
         $('filterBar').classList.toggle('filter-collapsed');
         $('filterToggle').textContent=$('filterBar').classList.contains('filter-collapsed')?'🔍 筛选与搜索 ▾':'🔍 筛选与搜索 ▴';
