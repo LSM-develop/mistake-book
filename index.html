@@ -127,7 +127,14 @@
         .checkbox-row { display:flex; align-items:center; gap:6px; }
         .checkbox-row input[type=checkbox] { width:18px; height:18px; accent-color:var(--primary); }
         .detail-content { line-height:1.8; }
-        .detail-content .detail-img { max-width:100%; max-height:300px; border-radius:8px; margin:8px 0; }
+        .detail-content .detail-img { max-width:100%; max-height:300px; border-radius:8px; margin:8px 0; cursor:pointer; transition:transform 0.2s; }
+        .detail-content .detail-img:hover { transform:scale(1.02); }
+
+        /* 图片灯箱 */
+        #lightbox { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:5000; align-items:center; justify-content:center; cursor:pointer; }
+        #lightbox img { max-width:95%; max-height:95%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5); }
+        #lightbox .close-hint { position:absolute; top:16px; right:24px; color:#fff; font-size:2rem; opacity:0.7; }
+        #lightbox .close-hint:hover { opacity:1; }
         .detail-content .detail-label { font-weight:600; color:var(--text-secondary); font-size:0.78rem; }
         .admin-table { width:100%; border-collapse:collapse; margin-top:10px; font-size:0.8rem; }
         .admin-table th,.admin-table td { border:1px solid var(--border); padding:8px; text-align:left; }
@@ -838,7 +845,7 @@
             <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${questionHtml}</div>
             <p><span class="detail-label">📖 解析：</span></p>
             <div style="background:#f8fafc;padding:10px;border-radius:8px;margin:4px 0;white-space:pre-wrap;">${analysisHtml}</div>
-            ${imgUrl?`<p><span class="detail-label">📸 题目标题图：</span></p><img src="${imgUrl}" class="detail-img">`:''}
+            ${imgUrl?`<p><span class="detail-label">📸 题目标题图：</span></p><img src="${imgUrl}" class="detail-img" onclick="event.stopPropagation();showLightbox(this.src)" style="cursor:pointer;">`:''}
             ${S.viewMode==='other'?'<p style="color:#e67e22;margin-top:6px;">🔒 只读模式</p>':''}
         `;
         $('detailModal').style.display='flex';
@@ -1123,7 +1130,7 @@
             }catch(e){}
         }
         result=escapeHtml(text).replace(/\[img:([^\]]+)\]/g,(m,id)=>{
-            if(imgMap[id])return `<br><img src="${imgMap[id]}" style="max-width:100%;max-height:300px;border-radius:8px;margin:8px 0;"><br>`;
+            if(imgMap[id])return `<br><img src="${imgMap[id]}" onclick="event.stopPropagation();showLightbox(this.src)" style="max-width:100%;max-height:300px;border-radius:8px;margin:8px 0;cursor:pointer;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'"><br>`;
             return '[📷图片]';
         });
         return result;
@@ -1222,8 +1229,28 @@
         $('loginPanel').style.display='block';$('registerPanel').style.display='none';
     }
 
+    // 图片灯箱
+    function showLightbox(src) {
+        let lb = document.getElementById('lightbox');
+        if (!lb) {
+            lb = document.createElement('div');
+            lb.id = 'lightbox';
+            lb.innerHTML = '<span class="close-hint">✕</span><img src="">';
+            lb.onclick = () => { lb.style.display = 'none'; };
+            document.body.appendChild(lb);
+        }
+        lb.querySelector('img').src = src;
+        lb.style.display = 'flex';
+    }
+
     init();
 })();
 </script>
+
+<!-- 图片灯箱 -->
+<div id="lightbox" onclick="this.style.display='none'">
+    <span class="close-hint">✕</span>
+    <img src="" alt="放大图片" onclick="event.stopPropagation()">
+</div>
 </body>
 </html>
